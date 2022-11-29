@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="stylesheet" href="./assets/css/responsive.css">
+    <link rel="stylesheet" href="./assets/fonts/fontawesome-free-6.2.0-web/css/all.min.css">
+    <title>Music Player</title>
+</head>
+<body>
+    <div id="app">
+        <div class="dash-board">
+            <p class="dash-board__title">Now playing:</p>
+            <h2 class="dash-board__name">Tên bài hát</h2>
+            <div class="dash-board__img-wrap"><div class="dash-board__img"></div></div>
+        
+            <div class="control">
+                <a class="btn btn-repeat"><i class="fa-solid fa-repeat"></i></a>
+                <a class="btn btn-prev"><i class="fa-solid fa-backward"></i></a>
+                <a class="btn btn-play active"><i class="fa-solid fa-play"></i></a>
+                <a class="btn btn-pause"><i class="fa-solid fa-pause"></i></a>
+                <a class="btn btn-next"><i class="fa-solid fa-forward"></i></a>
+                <a class="btn btn-random"><i class="fa-solid fa-shuffle"></i></a>
+            </div>
+            <input id="progress" type="range" value="0" step="1" min="0" max="100">
+            <audio src="" id="audio"></audio>
+        </div>
+        <div class="block"></div>
+        <div class="list-songs">
+            <div class="block"></div>
+            <ul class="songs">
+                
+            </ul>
+        </div>
+    </div>
+    <script>
+    
+    const $ = document.querySelector.bind(document);
+    const $$ = document.querySelectorAll.bind(document);
+    const playBtn = $('.btn-play');
+    const pauseBtn = $('.btn-pause');
+    const randomBtn = $('.btn-random');
+    const repeatBtn = $('.btn-repeat');
+    const nextBtn = $('.btn-next');
+    const prevBtn = $('.btn-prev');
+    const audio = $('#audio');
+    const thumb = $('.dash-board__img');
+    const thumbWrap = $('.dash-board__img-wrap');
+    const name = $('.dash-board__name');
+    const progress = $('#progress');
+    const songList = $('.songs');
+
+    const app = {
+        currentIndex: 0,
+        isRandom: false,
+        isRepeat: false,
+        isPlaying: false,
+        songs : [
+            {
+                name: 'After Dark',
+                author: 'Mr.Kitty',
+                thumb: './assets/img/AfterDark.jpg',
+                music:'./assets/music/After-dark-MrKitty.mp3'
+            },
+            {
+                name: 'Get You The Moon',
+                author: 'Kina',
+                thumb: './assets/img/GetYouTheMoon.jpg',
+                music:'./assets/music/Get-you-the-moon-Kina.mp3'
+            },
+            {
+                name: "I'm Not The Only One",
+                author: 'Sam Smith',
+                thumb: './assets/img/ImNotTheOnlyOne.jpg',
+                music:'./assets/music/Im-not-the-only-one-SamSmith.mp3'
+            },
+            {
+                name: 'Past Lives',
+                author: 'Sapient Dream',
+                thumb: './assets/img/PastLives.jpg',
+                music:'./assets/music/Past-lives-SapientDream.mp3'
+            },
+            {
+                name: 'Saving Grace',
+                author: 'The Afters',
+                thumb: './assets/img/SavingGrace.jpg',
+                music:'./assets/music/Saving-grace-TheAfters.mp3'
+            },
+            {
+                name: 'Set Fire To The Rain',
+                author: 'Adele',
+                thumb: './assets/img/SetFireToTheRain.jpg',
+                music:'./assets/music/Set-fire-to-the-rain-Adele.mp3'
+            },
+            {
+                name: 'Take Me To Church',
+                author: 'Hozier',
+                thumb: './assets/img/TakeMeToChurch.jpg',
+                music:'./assets/music/Take-me-to-church-Hozier.mp3'
+            },
+            {
+                name: 'Until I Found You',
+                author: 'Stephen Sanchez',
+                thumb: './assets/img/UntilIFoundYou.jpg',
+                music:'./assets/music/Until-i-found-you-StephenSanchez.mp3'
+            }
+        ],
+        
+        events: function() {
+            const _this = this;
+            const thumbWidth = thumbWrap.offsetWidth;
+
+            const thumbAnimate = thumb.animate([
+                { transform : 'rotate(360deg)' }
+            ],{
+                duration: 10000,
+                iterations: Infinity
+            });
+            thumbAnimate.pause();
+
+            document.onscroll = function() {
+                const scrollPx = Math.floor(window.scrollY || document.documentElement.scrollTop);
+                const newWidth = thumbWidth - scrollPx;
+                thumbWrap.style.width = newWidth > 0 ? newWidth + 'px' : 0;
+                thumb.style.opacity = newWidth / thumbWidth;
+                thumb.style.borderWidth = ( 2 * newWidth / thumbWidth) + 'px';
+            },
+
+            // Vì valuePercent NaN nên progress.value = 50
+            audio.ontimeupdate = function() {
+                if (audio.duration) {
+                    const valuePercent = Math.round(audio.currentTime / audio.duration * 100);
+                    progress.value = valuePercent;
+                }
+            },
+
+            audio.onended = function() {
+                if (_this.isRandom) {
+                    _this.currentIndex = _this.randomSong();
+                    _this.loadCurrentSong();
+                } else {
+                    _this.nextSong();
+                };
+                audio.play();
+            },
+
+            progress.oninput = function() {
+                audio.currentTime = progress.value * audio.duration / 100;
+            },
+
+            playBtn.onclick = function() {
+                audio.play();
+            };
+
+            pauseBtn.onclick = function() {
+                audio.pause();
+            };
+
+            audio.onplay = function() {
+                _this.isPlaying = true;
+                playBtn.classList.remove('active');
+                pauseBtn.classList.add('active');
+                thumbAnimate.play();
+            }
+
+            audio.onpause = function() {
+                _this.isPlaying = false;
+                pauseBtn.classList.remove('active');
+                playBtn.classList.add('active');
+                thumbAnimate.pause();
+            }
+
+            nextBtn.onclick = function() {
+                if (_this.isRandom) {
+                    _this.currentIndex = _this.randomSong();
+                    _this.loadCurrentSong();
+                } else {
+                    _this.nextSong();
+                };
+                audio.play();
+            };
+
+            prevBtn.onclick = function() {
+                if (_this.isRandom) {
+                    _this.currentIndex = _this.randomSong();
+                    _this.loadCurrentSong();
+                } else {
+                    _this.prevSong();
+                };
+                audio.play();
+            };
+
+            repeatBtn.onclick = function() {
+                _this.isRepeat = !_this.isRepeat;
+                repeatBtn.classList.toggle('active', _this.isRepeat);
+                if (_this.isRepeat) {
+                    _this.repeatSong();
+                };
+            };
+
+            randomBtn.onclick = function() {
+                _this.isRandom = !_this.isRandom;
+                randomBtn.classList.toggle('active', _this.isRandom);
+                if (_this.isRandom) {
+                    _this.randomSong();
+                }
+            };
+
+            songList.onclick = function(e) {
+                const songItem = e.target.closest('.song')
+                if (songItem && !e.target.closest('.song__option')) {
+                    _this.currentIndex = songItem.getAttribute('data-index');
+                    _this.loadCurrentSong();
+                    audio.play();
+                }
+            }
+        },
+
+        render: function() {
+            const htmls = this.songs.map(function(song, index) {
+                return `
+                <li class="song" data-index="${index}">
+                    <img src="${song.thumb}" alt="" class="song__img">
+                    <div class="song__text">
+                        <h4 class="song__name">${song.name}</h4>
+                        <i class="song__author">${song.author}</i>
+                    </div>
+                    <div class="song__option">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </div>
+                </li>
+                `
+            });
+            $('.songs').innerHTML = htmls.join('');
+        },
+
+        activeSong : function() {
+            const songItem = $$('.song');   
+            for (let i = 0; i < this.songs.length; i++) {
+                songItem[i].classList.toggle('active', false);
+                if (songItem[i].getAttribute('data-index') == this.currentIndex) {
+                    var songActive = songItem[i];
+                }
+            };
+            songActive.classList.add('active');
+            this.scrollIntoView();
+        },
+
+        currentSong: function() {
+            return this.songs[this.currentIndex];
+        },
+
+        loadCurrentSong: function() {
+            name.textContent = `${this.currentSong().name}`;
+            thumb.style.backgroundImage = `url(${this.currentSong().thumb})`;
+            audio.src = this.currentSong().music;
+            this.activeSong();
+        },
+
+        scrollIntoView : function() {
+            setTimeout(
+                $('.song.active').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'end'
+                })
+            , 300);
+        },
+
+        nextSong : function() {
+            this.currentIndex++;
+            if (this.currentIndex >= this.songs.length) {
+                this.currentIndex = 0;
+            };
+            this.loadCurrentSong();
+        },
+
+        prevSong : function() {
+            this.currentIndex--;
+            this.loadCurrentSong();
+        },
+
+        repeatSong : function() {
+            audio.onended = function() {
+                audio.play();
+            }
+        },
+
+        randomSong: function() {
+            let newCurrentIndex;
+            do {
+                newCurrentIndex = Math.floor(Math.random() * (this.songs.length - 1));
+            } while (newCurrentIndex == this.currentIndex);
+            return newCurrentIndex;
+        },
+        
+        start: function() {
+            this.render();
+            this.events();
+            this.loadCurrentSong();
+            this.activeSong();
+            this.scrollIntoView();
+        }
+    };
+
+    app.start();
+    </script>
+</body>
+</html>

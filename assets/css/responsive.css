@@ -1,0 +1,33 @@
+/* PC */
+@media (min-width: 1024px) {
+    .dash-board__img-wrap {
+        width: 240px;
+    }
+    
+    .dash-board {
+        position: fixed;
+        z-index: 2;
+        top: 16px;
+        left: 30%;
+        right: 30%;
+    }
+
+    .btn {
+        width: 34px;
+        height: 34px;
+        line-height: 34px;
+    }
+    
+    .btn-play,
+    .btn-pause {
+        line-height: 50px;
+        width: 50px;
+        height: 50px;
+    }
+
+    .list-songs {
+        margin-top: 450px;
+        margin-left: 30%;
+        margin-right: 30%;
+    }
+} 
